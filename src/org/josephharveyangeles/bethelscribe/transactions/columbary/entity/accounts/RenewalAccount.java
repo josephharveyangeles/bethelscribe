@@ -7,6 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * This is the Renew Process Entity. Note that, payment on
+ * {@code RenewalAccount} refers to payment on {@code RenewCost} only,
+ * independent from {@code Registration} thus, adding {@code payments} on a
+ * un-renewed {@code RenewalAccount} is not possible.
+ * 
+ * @author yev
+ * @since 2017
+ */
 public class RenewalAccount {
 
 	private final Period renewInterval;
@@ -14,14 +23,34 @@ public class RenewalAccount {
 	private final List<RenewCycle> renewCycles;
 	private LocalDate renewDate;
 
-	public RenewalAccount(LocalDate registrationDate, RenewScheme renewScheme) {
+	/**
+	 * Creates a {@code RenewalAccount} on the same date of Registration. The
+	 * renewal date will be initialized to
+	 * {@code registrationDate + renewPeriod}. This scenario is the prime
+	 * {@code RenewalAccount} under this setup, payments can only be added upon
+	 * renewal.
+	 * 
+	 * @param registrationDate
+	 *            date of registration
+	 * @param renewScheme
+	 *            renewal scheme
+	 */
+	public RenewalAccount(final LocalDate registrationDate, final RenewScheme renewScheme) {
 		renewInterval = renewScheme.getPeriod();
 		renewCost = renewScheme.getCost();
 		renewDate = registrationDate.plus(renewInterval);
 		renewCycles = new ArrayList<>();
 	}
 
-	public RenewalAccount(LocalDate renewalDate, RenewScheme renewScheme, List<RenewCycle> cycles) {
+	/**
+	 * Creates a {@code RenewalAccount} from raw information. Useful when
+	 * creating an instance out of a persistence entity like a database.
+	 * 
+	 * @param renewalDate
+	 * @param renewScheme
+	 * @param cycles
+	 */
+	public RenewalAccount(final LocalDate renewalDate, final RenewScheme renewScheme, final List<RenewCycle> cycles) {
 		renewCost = renewScheme.getCost();
 		renewInterval = renewScheme.getPeriod();
 		renewDate = renewalDate;
@@ -54,9 +83,7 @@ public class RenewalAccount {
 	}
 
 	/**
-	 * TODO renewCycle should be empty on first renewal!
-	 * 
-	 * @return
+	 * @return if it's possible to renew.
 	 */
 	public boolean canRenew() {
 		return isLastCyclePaid();
@@ -78,11 +105,6 @@ public class RenewalAccount {
 		return renewCycles.get(renewCycles.size() - 1);
 	}
 
-	/**
-	 * TODO renewCycle is empty upon registration, payment is not allowed!
-	 * 
-	 * @param payment
-	 */
 	public void addPayment(Payment payment) {
 		if (renewCycles.isEmpty()) {
 			return;
@@ -93,6 +115,16 @@ public class RenewalAccount {
 		}
 	}
 
+	/**
+	 * Renews the account. Note that, renewal can only be made on a settled
+	 * {@code RenewCyle}, it is a good practice to call
+	 * {@link RenewalAccount#canRenew() canRenew()} first.
+	 * 
+	 * @see RenewCycle
+	 * @param payment
+	 *            renewal payment
+	 * @return remaining balance
+	 */
 	public BigDecimal renew(Payment payment) {
 		BigDecimal balance = payment.getAmount();
 		if (canRenew()) {
