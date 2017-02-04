@@ -105,14 +105,24 @@ public class RenewalAccount {
 		return renewCycles.get(renewCycles.size() - 1);
 	}
 
-	public void addPayment(Payment payment) {
+	public BigDecimal addPayment(Payment payment) {
 		if (renewCycles.isEmpty()) {
-			return;
+			return renewCost;
 		}
 
+		final RenewCycle currentCycle = getLastCycle();
 		if (!canRenew()) {
-			getLastCycle().addPayment(payment);
+			currentCycle.addPayment(payment);
 		}
+		return renewCost.subtract(getTotalPaymentAmount(currentCycle));
+	}
+
+	private BigDecimal getTotalPaymentAmount(final RenewCycle cycle) {
+		BigDecimal total = BigDecimal.ZERO;
+		for (Payment payment : cycle.getPayments()) {
+			total = total.add(payment.getAmount());
+		}
+		return total;
 	}
 
 	/**
@@ -126,13 +136,12 @@ public class RenewalAccount {
 	 * @return remaining balance
 	 */
 	public BigDecimal renew(Payment payment) {
-		BigDecimal balance = payment.getAmount();
 		if (canRenew()) {
 			renewCycles.add(new RenewCycle(payment));
 			renewDate = renewDate.plus(renewInterval);
-			balance = renewCost.subtract(payment.getAmount());
+			return renewCost.subtract(payment.getAmount());
 		}
-		return balance;
+		return renewCost;
 	}
 
 	/**
@@ -160,9 +169,7 @@ public class RenewalAccount {
 	}
 
 	private void rollbackLastCycle() {
-		if (!renewCycles.isEmpty()) {
-			renewCycles.remove(renewCycles.size() - 1);
-			renewDate = renewDate.minus(renewInterval);
-		}
+		renewCycles.remove(renewCycles.size() - 1);
+		renewDate = renewDate.minus(renewInterval);
 	}
 }
