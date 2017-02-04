@@ -90,11 +90,11 @@ public class RenewalAccount {
 	}
 
 	private boolean isLastCyclePaid() {
-		return renewCycles.isEmpty() || getTotalPaymentOnLastCycle().compareTo(renewCost) == 0;
+		return renewCycles.isEmpty() || getTotalPaymentOnLastCycle().compareTo(renewCost) >= 0;
 	}
 
 	private BigDecimal getTotalPaymentOnLastCycle() {
-		BigDecimal totalPaidOnLastCyle = new BigDecimal(0);
+		BigDecimal totalPaidOnLastCyle = BigDecimal.ZERO;
 		for (Payment p : getLastCycle().getPayments()) {
 			totalPaidOnLastCyle = totalPaidOnLastCyle.add(p.getAmount());
 		}

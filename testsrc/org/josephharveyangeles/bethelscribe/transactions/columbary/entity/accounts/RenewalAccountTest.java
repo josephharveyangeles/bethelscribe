@@ -9,11 +9,10 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.List;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import jdk.nashorn.internal.ir.annotations.Ignore;
 
 public class RenewalAccountTest {
 
@@ -35,15 +34,17 @@ public class RenewalAccountTest {
 	}
 
 	@Test
-	@Ignore
 	public void testRenewals() {
-		testHalfPayment_Renewal();
-		testFullPayment_Renewal();
+		testHalfPaymentRenewal();
+		testFullPaymentRenewal();
 		testTwoSuccessiveRenewals();
-		testPayment_withoutRenewing_shouldDoNothing();
+		testPaymentAfterRenew();
+		testOverPayment();
+		testPaymentOnFullyPaidShouldDoNothing();
+		testPaymentWithoutRenewShouldDoNothing();
 	}
 
-	private void testHalfPayment_Renewal() {
+	private void testHalfPaymentRenewal() {
 		final int years = 5;
 		Period period = createPeriod(years);
 		RenewalAccount account = createRenewalAccount(period);
@@ -66,7 +67,7 @@ public class RenewalAccountTest {
 		assertEquals(1, account.getPaymentHistory().size());
 	}
 
-	private void testFullPayment_Renewal() {
+	private void testFullPaymentRenewal() {
 		int years = 5;
 		Period rp = createPeriod(years);
 		LocalDate expectedDate = LocalDate.now().plus(rp.multipliedBy(2));
@@ -129,7 +130,7 @@ public class RenewalAccountTest {
 		assertEquals(4, account.getPaymentHistory().size());
 	}
 
-	private void testPayment_withoutRenewing_shouldDoNothing() {
+	private void testPaymentWithoutRenewShouldDoNothing() {
 		int years = 1;
 		Period period = createPeriod(years);
 		RenewalAccount account = createAccount(years);
@@ -148,13 +149,6 @@ public class RenewalAccountTest {
 	}
 
 	// @Test
-	public void testPayments() {
-		testPayment_whileNotRenewingFirst_shouldDoNothing();
-		testSecondaryPayment_resulting_NotFullyPaid();
-		testSecondaryPayment_resulting_FullyPaid();
-	}
-
-	// @Test
 	public void testPaymentRollback() {
 		testPaymentRollbackOnZeroPayments();
 		testPaymentRollbackOnInitialPayment();
@@ -163,72 +157,73 @@ public class RenewalAccountTest {
 		testMultipleRollbacks();
 	}
 
-	private void testPayment_whileNotRenewingFirst_shouldDoNothing() {
-		final Period period = Period.ofYears(5);
-		final LocalDate registrationDate = LocalDate.now();
-		final BigDecimal renewCost = new BigDecimal(RENEWAL_COST);
-		final RenewScheme renewScheme = new RenewScheme(period, renewCost);
-		RenewalAccount renewal = new RenewalAccount(registrationDate, renewScheme);
-
-		final Payment payment = new Payment("arnum", new BigDecimal(5000), LocalDate.now());
-		renewal.addPayment(payment);
-		assertTrue(renewal.canRenew());
-		assertEquals(0, renewal.getRenewCycleCount());
-		assertEquals(0, renewal.getPaymentHistory().size());
-	}
-
-	private void testSecondaryPayment_resulting_NotFullyPaid() {
+	private void testPaymentAfterRenew() {
 		RenewalAccount renewal = createAccount(5);
-		Payment initialPayment = createPayment(3000);
-		renewal.addPayment(initialPayment);
+		assertTrue(renewal.canRenew());
+
+		final int three_thousand = 3000;
+		Payment renewPayment = createPayment(three_thousand);
+		BigDecimal expectedRenewBalance = new BigDecimal(RENEWAL_COST - three_thousand);
+		BigDecimal renewBalance = renewal.renew(renewPayment);
 
 		assertFalse(renewal.canRenew());
+		assertEquals(expectedRenewBalance, renewBalance);
 		assertEquals(1, renewal.getPaymentHistory().size());
-		assertEquals(1, renewal.getRenewCycleCount());
 
-		Payment secondaryPayment = createPayment(2000);
+		Payment secondaryPayment = createPayment(three_thousand);
 		renewal.addPayment(secondaryPayment);
+
+		BigDecimal expectedBalanceAfterPayment = new BigDecimal(RENEWAL_COST - three_thousand * 2);
+		BigDecimal balanceAfterPayment = new BigDecimal(RENEWAL_COST)
+				.subtract(getTotalPayment(renewal.getPaymentHistory()));
 
 		assertFalse(renewal.canRenew());
 		assertEquals(2, renewal.getPaymentHistory().size());
+		assertEquals(expectedBalanceAfterPayment, balanceAfterPayment);
 		assertEquals(1, renewal.getRenewCycleCount());
 	}
 
-	private void testSecondaryPayment_resulting_FullyPaid() {
+	private BigDecimal getTotalPayment(List<Payment> payments) {
+		BigDecimal total = BigDecimal.ZERO;
+		for (Payment payment : payments) {
+			total = total.add(payment.getAmount());
+		}
+		return total;
+	}
+
+	private void testOverPayment() {
 		RenewalAccount renewal = createAccount(5);
-		final int halfCost = RENEWAL_COST / 2;
-		Payment initialPayment = createPayment(halfCost);
-		Payment secondaryPayment = createPayment(halfCost);
+		Payment initialPayment = createPayment(9000);
+		Payment overPayment = createPayment(2000);
 
-		renewal.addPayment(initialPayment);
-		assertFalse(renewal.canRenew());
-
-		renewal.addPayment(secondaryPayment);
 		assertTrue(renewal.canRenew());
-		assertEquals(2, renewal.getPaymentHistory().size());
-		assertEquals(1, renewal.getRenewCycleCount());
+
+		renewal.renew(initialPayment);
+
+		assertFalse(renewal.canRenew());
+		renewal.addPayment(overPayment);
+		assertTrue(renewal.canRenew());
 	}
 
-	private void testPaymentOnFullyPaidAccount_willDoNothing() {
+	private void testPaymentOnFullyPaidShouldDoNothing() {
 		RenewalAccount renewal = createAccount(5);
 		Payment first = createPayment(5000);
 		Payment second = createPayment(5000);
 		Payment third = createPayment(5000);
 
-		renewal.addPayment(first);
+		assertTrue(renewal.canRenew());
 
+		renewal.renew(first);
 		assertFalse(renewal.canRenew());
 		assertEquals(1, renewal.getPaymentHistory().size());
 		assertEquals(1, renewal.getRenewCycleCount());
 
 		renewal.addPayment(second);
-
 		assertTrue(renewal.canRenew());
 		assertEquals(2, renewal.getPaymentHistory().size());
 		assertEquals(1, renewal.getRenewCycleCount());
 
 		renewal.addPayment(third);
-
 		assertTrue(renewal.canRenew());
 		assertEquals(2, renewal.getPaymentHistory().size());
 		assertEquals(1, renewal.getRenewCycleCount());
