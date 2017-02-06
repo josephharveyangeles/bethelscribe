@@ -7,7 +7,7 @@ import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.Payo
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.UnitTransactionInformation;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationResponseAccount;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationTransactionResponse;
-import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RenewalResponseAccount;
+import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationRenewalResponseAccount;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.entity.ColumbaryEntity;
 
 public class RegistrationTransactionResponseAdapter implements RegistrationTransactionResponse {
@@ -17,7 +17,7 @@ public class RegistrationTransactionResponseAdapter implements RegistrationTrans
 	private final PayorTransactionInformation pInfo;
 	private final UnitTransactionInformation uInfo;
 	private final RegistrationResponseAccount registration;
-	private final RenewalResponseAccount renewal;
+	private final RegistrationRenewalResponseAccount renewal;
 
 	public RegistrationTransactionResponseAdapter(ColumbaryEntity entity) {
 		balance = entity.getBalance();
@@ -54,7 +54,7 @@ public class RegistrationTransactionResponseAdapter implements RegistrationTrans
 	}
 
 	@Override
-	public RenewalResponseAccount getRenewalAccount() {
+	public RegistrationRenewalResponseAccount getRenewalAccount() {
 		return renewal;
 	}
 }

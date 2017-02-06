@@ -25,15 +25,12 @@ public class RenewCycle {
 	}
 
 	public BigDecimal removeLastPayment(final BigDecimal balance) {
-		BigDecimal result;
 		if (!payments.isEmpty()) {
 			int indexOfLast = payments.size() - 1;
-			result = balance.add(payments.get(indexOfLast).getAmount());
-			payments.remove(indexOfLast);
-		} else {
-			result = balance;
+			Payment payment = payments.remove(indexOfLast);
+			return balance.add(payment.getAmount());
 		}
-		return result;
+		return balance;
 	}
 
 	public List<Payment> getPayments() {

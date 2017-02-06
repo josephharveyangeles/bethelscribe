@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.RenewChain;
 
-public interface RenewalResponseAccount {
+public interface RegistrationRenewalResponseAccount {
 
 	public int getRenewPeriod();
 

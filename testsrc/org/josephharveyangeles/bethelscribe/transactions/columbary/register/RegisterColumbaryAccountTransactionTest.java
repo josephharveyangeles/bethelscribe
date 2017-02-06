@@ -20,7 +20,7 @@ import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.Rene
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.UnitTransactionInformation;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.request.RegisterColumbaryTransactionRequest;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationResponseAccount;
-import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RenewalResponseAccount;
+import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationRenewalResponseAccount;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -130,7 +130,7 @@ public class RegisterColumbaryAccountTransactionTest {
 	}
 
 	private void assertRenewal(LocalDate regDate, BigDecimal renewCost, int interval) {
-		RenewalResponseAccount renewal = resultStub.getRenewalAccount();
+		RegistrationRenewalResponseAccount renewal = resultStub.getRenewalAccount();
 		List<RenewChain> chains = renewal.getRenewChains();
 
 		assertTrue(chains.isEmpty());

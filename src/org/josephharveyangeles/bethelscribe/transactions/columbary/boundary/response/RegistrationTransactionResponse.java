@@ -18,6 +18,6 @@ public interface RegistrationTransactionResponse {
 
 	public RegistrationResponseAccount getRegistrationAccount();
 
-	public RenewalResponseAccount getRenewalAccount();
+	public RegistrationRenewalResponseAccount getRenewalAccount();
 
 }

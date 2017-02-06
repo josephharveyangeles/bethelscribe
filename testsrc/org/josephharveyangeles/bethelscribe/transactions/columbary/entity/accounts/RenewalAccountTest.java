@@ -25,6 +25,31 @@ public class RenewalAccountTest {
 		testRawDataRenewalInitialization();
 	}
 
+	@Test
+	public void testRenewals() {
+		testHalfPaymentRenewal();
+		testFullPaymentRenewal();
+		testTwoSuccessiveRenewals();
+		testRenewalWhileStillHaveUnpaidCycle();
+	}
+
+	@Test
+	public void testPayments() {
+		testOverPayment();
+		testPaymentAfterRenew();
+		testPaymentOnFullyPaidShouldDoNothing();
+		testPaymentWithoutRenewShouldDoNothing();
+	}
+
+	@Test
+	public void testPaymentRollback() {
+		testRollbackOnNoPayments();
+		testRollbackOnInitialPayment();
+		testRollbackOnRenewedAccountShouldRollbackDate();
+		testRollbackOnPartialPaidRenewalShouldNotRollbackDate();
+		testMultipleRollbacks();
+	}
+
 	private void testRegistrationRenewalInitialization() {
 		final Period period = Period.ofYears(5);
 		final LocalDate renewDate = LocalDate.now().plus(period);
@@ -52,22 +77,6 @@ public class RenewalAccountTest {
 		assertEquals(RENEWAL_COST, renewal.getRenewCost().intValue());
 		assertEquals(5, renewal.getRenewPeriod().getYears());
 		assertEquals(LocalDate.now(), renewal.getRenewDate());
-	}
-
-	@Test
-	public void testRenewals() {
-		testHalfPaymentRenewal();
-		testFullPaymentRenewal();
-		testTwoSuccessiveRenewals();
-		testRenewalWhileStillHaveUnpaidCycle();
-	}
-
-	@Test
-	public void testPayments() {
-		testOverPayment();
-		testPaymentAfterRenew();
-		testPaymentOnFullyPaidShouldDoNothing();
-		testPaymentWithoutRenewShouldDoNothing();
 	}
 
 	private void testRenewalWhileStillHaveUnpaidCycle() {
@@ -191,15 +200,6 @@ public class RenewalAccountTest {
 		assertEquals(0, account.getPaymentHistory().size());
 	}
 
-	@Test
-	public void testPaymentRollback() {
-		testRollbackOnNoPayments();
-		testRollbackOnInitialPayment();
-		testRollbackOnRenewedAccountShouldRollbackDate();
-		testRollbackOnPartialPaidRenewalShouldNotRollbackDate();
-		// testMultipleRollbacks();
-	}
-
 	private void testPaymentAfterRenew() {
 		RenewalAccount renewal = createAccount(5);
 		assertTrue(renewal.canRenew());
@@ -288,7 +288,7 @@ public class RenewalAccountTest {
 		assertTrue(renewal.canRenew());
 		assertEquals(0, renewal.getPaymentHistory().size());
 		assertEquals(0, renewal.getRenewCycleCount());
-		assertEquals(RENEWAL_COST, balanceAfter.intValue());
+		assertEquals(0, balanceAfter.intValue());
 	}
 
 	private void testRollbackOnRenewedAccountShouldRollbackDate() {
@@ -313,7 +313,7 @@ public class RenewalAccountTest {
 		assertTrue(renewal.getPaymentHistory().isEmpty());
 		assertEquals(0, renewal.getRenewCycleCount());
 		assertEquals(expectedRenewDate, renewal.getRenewDate());
-		assertEquals(RENEWAL_COST, rollbackBalance.intValue());
+		assertEquals(0, rollbackBalance.intValue());
 	}
 
 	private void testRollbackOnPartialPaidRenewalShouldNotRollbackDate() {
@@ -348,76 +348,72 @@ public class RenewalAccountTest {
 	private void testMultipleRollbacks() {
 		RenewalAccount renewal = createAccount(5);
 		Payment halfPrice = createPayment(RENEWAL_COST / 2);
-		int renewMultiplier = 1;
-		int paymentCount = 0;
-		int cycleCount = 1;
-
-		renewal.addPayment(halfPrice);
-		renewal.addPayment(halfPrice);
-		paymentCount += 2;
 
 		assertTrue(renewal.canRenew());
-		assertEquals(paymentCount, renewal.getPaymentHistory().size());
-		assertEquals(cycleCount, renewal.getRenewCycleCount());
-		assertEquals(LocalDate.now().plus(renewal.getRenewPeriod().multipliedBy(renewMultiplier)),
-				renewal.getRenewDate());
+		assertTrue(renewal.getPaymentHistory().isEmpty());
+		assertTrue(renewal.getRenewCycles().isEmpty());
+		assertEquals(LocalDate.now().plus(Period.ofYears(5)), renewal.getRenewDate());
+
+		final LocalDate tenYearsFromNow = LocalDate.now().plus(Period.ofYears(10));
 
 		renewal.renew(halfPrice);
-		cycleCount++;
-		paymentCount++;
-		renewMultiplier++;
-
 		assertFalse(renewal.canRenew());
-		assertEquals(paymentCount, renewal.getPaymentHistory().size());
-		assertEquals(cycleCount, renewal.getRenewCycleCount());
-		assertEquals(LocalDate.now().plus(renewal.getRenewPeriod().multipliedBy(renewMultiplier)),
-				renewal.getRenewDate());
+		assertEquals(1, renewal.getPaymentHistory().size());
+		assertEquals(1, renewal.getRenewCycleCount());
+		assertEquals(tenYearsFromNow, renewal.getRenewDate());
 
 		renewal.addPayment(halfPrice);
-		paymentCount++;
 		assertTrue(renewal.canRenew());
-		assertEquals(paymentCount, renewal.getPaymentHistory().size());
-		assertEquals(cycleCount, renewal.getRenewCycleCount());
+		assertEquals(2, renewal.getPaymentHistory().size());
+		assertEquals(1, renewal.getRenewCycleCount());
+		assertEquals(tenYearsFromNow, renewal.getRenewDate());
 
+		renewal.addPayment(halfPrice);
+		assertTrue(renewal.canRenew());
+		assertEquals(2, renewal.getPaymentHistory().size());
+		assertEquals(1, renewal.getRenewCycleCount());
+		assertEquals(tenYearsFromNow, renewal.getRenewDate());
+
+		final LocalDate fifteenYearsFromNow = LocalDate.now().plus(Period.ofYears(15));
 		renewal.renew(halfPrice);
-		cycleCount++;
-		paymentCount++;
-		renewMultiplier++;
-
 		assertFalse(renewal.canRenew());
-		assertEquals(paymentCount, renewal.getPaymentHistory().size());
-		assertEquals(cycleCount, renewal.getRenewCycleCount());
-		assertEquals(LocalDate.now().plus(renewal.getRenewPeriod().multipliedBy(renewMultiplier)),
-				renewal.getRenewDate());
+		assertEquals(3, renewal.getPaymentHistory().size());
+		assertEquals(2, renewal.getRenewCycleCount());
+		assertEquals(fifteenYearsFromNow, renewal.getRenewDate());
 
-		BigDecimal dummy = new BigDecimal(0);
-		renewal.rollbackPayment(dummy);
-		paymentCount--;
-		renewMultiplier--;
-		cycleCount--;
+		renewal.addPayment(halfPrice);
+		assertTrue(renewal.canRenew());
+		assertEquals(4, renewal.getPaymentHistory().size());
+		assertEquals(2, renewal.getRenewCycleCount());
+		assertEquals(fifteenYearsFromNow, renewal.getRenewDate());
 
-		renewal.rollbackPayment(dummy);
-		paymentCount--;
-
-		renewal.rollbackPayment(dummy);
-		paymentCount--;
-		cycleCount--;
-		renewMultiplier--;
-
-		renewal.rollbackPayment(dummy);
-		paymentCount--;
-
-		renewal.rollbackPayment(dummy);
-		paymentCount--;
-		cycleCount--;
-		renewMultiplier--;
-
+		BigDecimal balance = renewal.rollbackPayment(BigDecimal.ZERO);
 		assertFalse(renewal.canRenew());
-		assertEquals(paymentCount, renewal.getPaymentHistory().size());
-		assertEquals(cycleCount, renewal.getRenewCycleCount());
-		assertEquals(LocalDate.now().plus(renewal.getRenewPeriod().multipliedBy(renewMultiplier)),
-				renewal.getRenewDate());
+		assertEquals(halfPrice.getAmount().intValue(), balance.intValue());
+		assertEquals(3, renewal.getPaymentHistory().size());
+		assertEquals(2, renewal.getRenewCycleCount());
+		assertEquals(fifteenYearsFromNow, renewal.getRenewDate());
 
+		BigDecimal balanceAfterRenewRollback = renewal.rollbackPayment(balance);
+		assertTrue(renewal.canRenew());
+		assertEquals(BigDecimal.ZERO, balanceAfterRenewRollback);
+		assertEquals(2, renewal.getPaymentHistory().size());
+		assertEquals(1, renewal.getRenewCycleCount());
+		assertEquals(tenYearsFromNow, renewal.getRenewDate());
+
+		BigDecimal balanceAfterRollbackOnLastCycle = renewal.rollbackPayment(BigDecimal.ZERO);
+		assertFalse(renewal.canRenew());
+		assertEquals(halfPrice.getAmount().intValue(), balanceAfterRollbackOnLastCycle.intValue());
+		assertEquals(1, renewal.getPaymentHistory().size());
+		assertEquals(1, renewal.getRenewCycleCount());
+		assertEquals(tenYearsFromNow, renewal.getRenewDate());
+
+		BigDecimal balanceAfterLastRollback = renewal.rollbackPayment(BigDecimal.ZERO);
+		assertTrue(renewal.canRenew());
+		assertEquals(BigDecimal.ZERO, balanceAfterLastRollback);
+		assertTrue(renewal.getPaymentHistory().isEmpty());
+		assertTrue(renewal.getRenewCycles().isEmpty());
+		assertEquals(LocalDate.now().plus(Period.ofYears(5)), renewal.getRenewDate());
 	}
 
 	private RenewalAccount createAccount(int period) {

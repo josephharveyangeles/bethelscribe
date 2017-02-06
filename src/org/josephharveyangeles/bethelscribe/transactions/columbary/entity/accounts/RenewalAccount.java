@@ -153,19 +153,16 @@ public class RenewalAccount {
 	 * @return the updated balance
 	 */
 	public BigDecimal rollbackPayment(final BigDecimal balance) {
-		BigDecimal result = balance;
 		if (renewCycles.isEmpty()) {
-			return result;
+			return balance;
 		}
 
 		RenewCycle lastCycle = getLastCycle();
 		if (lastCycle.hasOnePayment()) {
 			rollbackLastCycle();
-			result = getRenewCost();
-		} else {
-			result = lastCycle.removeLastPayment(balance);
+			return BigDecimal.ZERO;
 		}
-		return result;
+		return lastCycle.removeLastPayment(balance);
 	}
 
 	private void rollbackLastCycle() {

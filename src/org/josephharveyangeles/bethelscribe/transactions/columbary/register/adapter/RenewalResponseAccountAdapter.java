@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.RenewChain;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.adapters.RenewChainAdapter;
-import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RenewalResponseAccount;
+import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationRenewalResponseAccount;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.entity.accounts.RenewalAccount;
 
-class RenewalResponseAccountAdapter implements RenewalResponseAccount {
+class RenewalResponseAccountAdapter implements RegistrationRenewalResponseAccount {
 
 	private final int renewPeriod;
 	private final BigDecimal cost;

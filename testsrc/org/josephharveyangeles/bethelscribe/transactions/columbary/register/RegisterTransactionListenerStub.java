@@ -7,7 +7,7 @@ import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.Payo
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.UnitTransactionInformation;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationResponseAccount;
 import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationTransactionResponse;
-import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RenewalResponseAccount;
+import org.josephharveyangeles.bethelscribe.transactions.columbary.boundary.response.RegistrationRenewalResponseAccount;
 
 public class RegisterTransactionListenerStub implements RegisterColumbaryTransactionListener {
 	private boolean isSet;
@@ -16,7 +16,7 @@ public class RegisterTransactionListenerStub implements RegisterColumbaryTransac
 	private PayorTransactionInformation pinfo;
 	private UnitTransactionInformation uinfo;
 	private RegistrationResponseAccount registration;
-	private RenewalResponseAccount renewal;
+	private RegistrationRenewalResponseAccount renewal;
 
 	@Override
 	public void registered(RegistrationTransactionResponse registrationResult) {
@@ -53,7 +53,7 @@ public class RegisterTransactionListenerStub implements RegisterColumbaryTransac
 		return registration;
 	}
 
-	public RenewalResponseAccount getRenewalAccount() {
+	public RegistrationRenewalResponseAccount getRenewalAccount() {
 		return renewal;
 	}
 
